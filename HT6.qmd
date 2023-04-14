@@ -1,0 +1,25 @@
+---
+title: "HT6"
+format: html
+editor: visual
+---
+
+```{r include=FALSE}
+
+library(psych)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(psych)
+library(corrplot)
+library(RColorBrewer)
+library(nortest)
+library(lmtest)
+library(jtools)
+library(rpart)
+library(rpart.plot)
+library(caret)
+library(randomForest)
+```
+
+# Hoja de trabajo 6
