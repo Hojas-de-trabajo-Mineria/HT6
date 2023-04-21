@@ -1,8 +1,10 @@
 ---
-title: "HT6"
+title: "HT7"
 format: html
 editor: visual
 ---
+
+# Hoja de Trabajo 7
 
 ```{r include=FALSE}
 
@@ -20,6 +22,61 @@ library(rpart)
 library(rpart.plot)
 library(caret)
 library(randomForest)
+
+pricesTrain <- read.csv("train.csv")
 ```
 
-# Hoja de trabajo 6
+## Muestreo 1
+
+Muestreo realizado sin clasificación de casas (Cara, intermedia, barata)
+
+```{r}
+set.seed(456)
+p <- 0.7
+corte <- sample(nrow(pricesTrain), nrow(pricesTrain) * p)
+train <- pricesTrain[corte,]
+train['YearsBuilt'] = 2023 - train$YearBuilt
+train['YearsRem'] = 2023 - train$YearRemodAdd
+test <- pricesTrain[-corte,]
+test['YearsBuilt'] = 2023 - test$YearBuilt
+test['YearsRem'] = 2023 - test$YearRemodAdd
+```
+
+### Eliminación de variables
+
+```{r multivariable}
+
+numericasTrain <- train[, c('MSSubClass', 'LotArea', 'OverallQual', 'OverallCond', 'YearsBuilt', 'YearsRem', 'BsmtFinSF1', 'BsmtFinSF2', 'BsmtUnfSF', 'TotalBsmtSF', 'X1stFlrSF', 'X2ndFlrSF', 'LowQualFinSF', 'GrLivArea', 'BsmtFullBath', 'BsmtHalfBath', 'FullBath', 'HalfBath', 'BedroomAbvGr', 'KitchenAbvGr', 'TotRmsAbvGrd', 'Fireplaces', 'GarageCars', 'GarageArea', 'WoodDeckSF', 'OpenPorchSF', 'EnclosedPorch', 'X3SsnPorch', 'ScreenPorch', 'PoolArea', 'MiscVal', 'MoSold', 'SalePrice')]
+numericasTest <- test[, c('MSSubClass', 'LotArea', 'OverallQual', 'OverallCond', 'YearsBuilt', 'YearsRem', 'BsmtFinSF1', 'BsmtFinSF2', 'BsmtUnfSF', 'TotalBsmtSF', 'X1stFlrSF', 'X2ndFlrSF', 'LowQualFinSF', 'GrLivArea', 'BsmtFullBath', 'BsmtHalfBath', 'FullBath', 'HalfBath', 'BedroomAbvGr', 'KitchenAbvGr', 'TotRmsAbvGrd', 'Fireplaces', 'GarageCars', 'GarageArea', 'WoodDeckSF', 'OpenPorchSF', 'EnclosedPorch', 'X3SsnPorch', 'ScreenPorch', 'PoolArea', 'MiscVal', 'MoSold', 'SalePrice')]
+```
+
+## Muestreo 2
+
+Muestreo con clasificación de casas
+
+```{r dividir}
+orderPrice <- pricesTrain[order(pricesTrain$SalePrice),]
+orderPrice['Clasificacion']<- list(1:nrow(orderPrice))
+orderPrice <- orderPrice %>% select(-c(Id, MoSold, YrSold, GarageYrBlt, Alley, LotShape, LandContour, Condition2, YearBuilt, Exterior2nd, FireplaceQu, GarageQual, SaleType,BsmtFinType2, BsmtFinSF2, BsmtUnfSF, BsmtFullBath, BsmtHalfBath, X3SsnPorch, GarageFinish))
+orderPrice <- orderPrice %>% mutate_at (c("MSSubClass","MSZoning", "Utilities", "LotConfig", "Street", "LandSlope", "Neighborhood", "Condition1", "BldgType", "HouseStyle", "OverallQual", "OverallCond", "RoofStyle", "PavedDrive", "RoofMatl", "Exterior1st", "MasVnrType", "ExterQual", "ExterCond","Foundation", "BsmtQual", "BsmtCond", "BsmtExposure", "BsmtFinType1", "Heating", "HeatingQC", "CentralAir","Electrical", "Functional", "GarageType", "GarageCond", "PoolQC", "Fence", "MiscFeature", "SaleCondition"), as.factor)
+
+orderPrice$Clasificacion[orderPrice$SalePrice <= 139000] <- 'Economica'
+
+orderPrice$Clasificacion[orderPrice$SalePrice > 139000 & orderPrice$SalePrice <= 189893 ] <- 'Intermedia'
+
+orderPrice$Clasificacion[orderPrice$SalePrice > 189893] <- 'Cara'
+
+# COnvertir en factores
+orderPrice <- orderPrice%>%mutate_at(c("Clasificacion"),as.factor)
+set.seed(456)
+economicas <- orderPrice[orderPrice$Clasificacion == 'Economica',]
+intermedias <- orderPrice[orderPrice$Clasificacion == 'Intermedia',]
+caras <- orderPrice[orderPrice$Clasificacion == 'Cara',]
+
+filasCasasE <- sample(nrow(economicas), nrow(economicas)*0.7)
+filasCasasI <- sample(nrow(intermedias), nrow(intermedias)*0.7)
+filasCasasC <- sample(nrow(caras), nrow(caras)*0.7)
+
+train <- rbind(economicas[filasCasasE,], intermedias[filasCasasI,], caras[filasCasasC,])
+test <- rbind(economicas[-filasCasasE,], intermedias[-filasCasasI,], caras[-filasCasasC,])
+```
