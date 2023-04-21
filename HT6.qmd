@@ -80,3 +80,11 @@ filasCasasC <- sample(nrow(caras), nrow(caras)*0.7)
 train <- rbind(economicas[filasCasasE,], intermedias[filasCasasI,], caras[filasCasasC,])
 test <- rbind(economicas[-filasCasasE,], intermedias[-filasCasasI,], caras[-filasCasasC,])
 ```
+
+```{r Conjuntos de prueba}
+y<- test[,"Clasificacion"]
+dataResp <- test
+test <- test%>% select(-c("SalePrice", "Clasificacion"))
+
+train <- train %>% select(-c("SalePrice"))
+```
