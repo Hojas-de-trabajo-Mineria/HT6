@@ -21,44 +21,23 @@ library(jtools)
 library(rpart)
 library(rpart.plot)
 library(caret)
+library(e1071)
 library(randomForest)
 
 pricesTrain <- read.csv("train.csv")
 ```
 
-## Muestreo 1
+## Modificación de los datos
 
-Muestreo realizado sin clasificación de casas (Cara, intermedia, barata)
+```{r mod_datos}
+colSums(is.na(pricesTrain))
 
-```{r}
-set.seed(456)
-p <- 0.7
-corte <- sample(nrow(pricesTrain), nrow(pricesTrain) * p)
-train <- pricesTrain[corte,]
-train['YearsBuilt'] = 2023 - train$YearBuilt
-train['YearsRem'] = 2023 - train$YearRemodAdd
-test <- pricesTrain[-corte,]
-test['YearsBuilt'] = 2023 - test$YearBuilt
-test['YearsRem'] = 2023 - test$YearRemodAdd
-```
-
-### Eliminación de variables
-
-```{r multivariable}
-
-numericasTrain <- train[, c('MSSubClass', 'LotArea', 'OverallQual', 'OverallCond', 'YearsBuilt', 'YearsRem', 'BsmtFinSF1', 'BsmtFinSF2', 'BsmtUnfSF', 'TotalBsmtSF', 'X1stFlrSF', 'X2ndFlrSF', 'LowQualFinSF', 'GrLivArea', 'BsmtFullBath', 'BsmtHalfBath', 'FullBath', 'HalfBath', 'BedroomAbvGr', 'KitchenAbvGr', 'TotRmsAbvGrd', 'Fireplaces', 'GarageCars', 'GarageArea', 'WoodDeckSF', 'OpenPorchSF', 'EnclosedPorch', 'X3SsnPorch', 'ScreenPorch', 'PoolArea', 'MiscVal', 'MoSold', 'SalePrice')]
-numericasTest <- test[, c('MSSubClass', 'LotArea', 'OverallQual', 'OverallCond', 'YearsBuilt', 'YearsRem', 'BsmtFinSF1', 'BsmtFinSF2', 'BsmtUnfSF', 'TotalBsmtSF', 'X1stFlrSF', 'X2ndFlrSF', 'LowQualFinSF', 'GrLivArea', 'BsmtFullBath', 'BsmtHalfBath', 'FullBath', 'HalfBath', 'BedroomAbvGr', 'KitchenAbvGr', 'TotRmsAbvGrd', 'Fireplaces', 'GarageCars', 'GarageArea', 'WoodDeckSF', 'OpenPorchSF', 'EnclosedPorch', 'X3SsnPorch', 'ScreenPorch', 'PoolArea', 'MiscVal', 'MoSold', 'SalePrice')]
-```
-
-## Muestreo 2
-
-Muestreo con clasificación de casas
-
-```{r dividir}
 orderPrice <- pricesTrain[order(pricesTrain$SalePrice),]
 orderPrice['Clasificacion']<- list(1:nrow(orderPrice))
-orderPrice <- orderPrice %>% select(-c(Id, MoSold, YrSold, GarageYrBlt, Alley, LotShape, LandContour, Condition2, YearBuilt, Exterior2nd, FireplaceQu, GarageQual, SaleType,BsmtFinType2, BsmtFinSF2, BsmtUnfSF, BsmtFullBath, BsmtHalfBath, X3SsnPorch, GarageFinish))
-orderPrice <- orderPrice %>% mutate_at (c("MSSubClass","MSZoning", "Utilities", "LotConfig", "Street", "LandSlope", "Neighborhood", "Condition1", "BldgType", "HouseStyle", "OverallQual", "OverallCond", "RoofStyle", "PavedDrive", "RoofMatl", "Exterior1st", "MasVnrType", "ExterQual", "ExterCond","Foundation", "BsmtQual", "BsmtCond", "BsmtExposure", "BsmtFinType1", "Heating", "HeatingQC", "CentralAir","Electrical", "Functional", "GarageType", "GarageCond", "PoolQC", "Fence", "MiscFeature", "SaleCondition"), as.factor)
+orderPrice <- orderPrice %>% select(-c(Id, MoSold, YrSold, GarageYrBlt, Alley, LotShape, LandContour, Condition2, YearBuilt, Exterior2nd, FireplaceQu, GarageQual, SaleType,BsmtFinType2, BsmtFinSF2, BsmtUnfSF, BsmtFullBath, BsmtHalfBath, X3SsnPorch, GarageFinish, YearRemodAdd, PoolQC, Fence, MiscFeature))
+
+orderPrice <- orderPrice %>% mutate_at (c("MSSubClass","MSZoning", "Utilities", "LotConfig", "Street", "LandSlope", "Neighborhood", "Condition1", "BldgType", "HouseStyle", "OverallQual", "OverallCond", "RoofStyle", "PavedDrive", "RoofMatl", "Exterior1st", "MasVnrType", "ExterQual", "ExterCond","Foundation", "BsmtQual", "BsmtCond", "BsmtExposure", "BsmtFinType1", "Heating", "HeatingQC", "CentralAir","Electrical", "Functional", "GarageType", "GarageCond", "SaleCondition", "KitchenQual"), as.factor)
+orderPrice <- orderPrice %>% mutate_at(c('MasVnrArea', 'LotFrontage', 'LotArea', 'OverallQual', 'OverallCond', 'BsmtFinSF1', 'TotalBsmtSF', 'X1stFlrSF', 'X2ndFlrSF', 'LowQualFinSF', 'GrLivArea', 'FullBath', 'HalfBath', 'BedroomAbvGr', 'KitchenAbvGr', 'TotRmsAbvGrd', 'Fireplaces', 'GarageCars', 'GarageArea', 'WoodDeckSF', 'OpenPorchSF', 'EnclosedPorch', 'ScreenPorch', 'PoolArea', 'MiscVal', 'SalePrice'), as.numeric)
 
 orderPrice$Clasificacion[orderPrice$SalePrice <= 139000] <- 'Economica'
 
@@ -66,6 +45,16 @@ orderPrice$Clasificacion[orderPrice$SalePrice > 139000 & orderPrice$SalePrice <=
 
 orderPrice$Clasificacion[orderPrice$SalePrice > 189893] <- 'Cara'
 
+orderPrice <- orderPrice %>% mutate_at(c('MasVnrArea', 'LotFrontage', 'LotArea', 'OverallQual', 'OverallCond', 'BsmtFinSF1', 'TotalBsmtSF', 'X1stFlrSF', 'X2ndFlrSF', 'LowQualFinSF', 'GrLivArea', 'FullBath', 'HalfBath', 'BedroomAbvGr', 'KitchenAbvGr', 'TotRmsAbvGrd', 'Fireplaces', 'GarageCars', 'GarageArea', 'WoodDeckSF', 'OpenPorchSF', 'EnclosedPorch', 'ScreenPorch', 'PoolArea', 'MiscVal', 'SalePrice'), scale)
+```
+
+Fueron retiradas las variables que no tienen relación con la variable respuesta, así como aquellas con altas cantidades de NA's. Todas las variables categóricas fueron convertidas en factores y las numéricas fueron normalizadas. Además, fue agregada una variable categórica que representa el rango de precio en el que se encuentra cada una de las casas, esta es nuestra variable de interés.
+
+## Muestreo
+
+Muestreo estratificado
+
+```{r dividir}
 # COnvertir en factores
 orderPrice <- orderPrice%>%mutate_at(c("Clasificacion"),as.factor)
 set.seed(456)
@@ -79,4 +68,51 @@ filasCasasC <- sample(nrow(caras), nrow(caras)*0.7)
 
 train <- rbind(economicas[filasCasasE,], intermedias[filasCasasI,], caras[filasCasasC,])
 test <- rbind(economicas[-filasCasasE,], intermedias[-filasCasasI,], caras[-filasCasasC,])
+```
+
+## Generación de los modelos
+
+```{r svm}
+modeloSVM_1<-svm(Clasificacion~., data=train, cost=2^-5, kernel="linear")
+modeloSVM_2<-svm(Clasificacion~., data=train, cost=0.5, kernel="polynomial", degree = 4, coef = 1)
+modeloSVM_3<-svm(Clasificacion~., data=train, gamma=2^-5, kernel="radial")
+modeloSVM_4<-svm(Clasificacion~., data=train, gamma=2^1, kernel="radial")
+
+modeloSVM_1$fitted
+
+summary(modeloSVM_1)
+summary(modeloSVM_2)
+summary(modeloSVM_3)
+summary(modeloSVM_4)
+```
+
+## Predicciones
+
+```{r predict}
+prediccion1 <- predict(modeloSVM_1, newdata = test[,-58])
+prediccion2 <- predict(modeloSVM_2, newdata = test[,-58])
+prediccion3 <- predict(modeloSVM_3, newdata = test[,-58])
+prediccion4 <- predict(modeloSVM_4, newdata = test[,-58])
+```
+
+## Matrices de confusión
+
+```{r conf_matrix}
+confusionMatrix(test[complete.cases(test), 58], prediccion1)
+confusionMatrix(test[complete.cases(test), 58], prediccion2)
+confusionMatrix(test[complete.cases(test), 58], prediccion3)
+confusionMatrix(test[complete.cases(test), 58], prediccion4)
+```
+
+Tomando en cuenta la exactitud de cada uno de los modelos anteriores, podemos concluir que los mejores fueron el modelo lineal y el polinomial, pues cada uno logró explicar más del 80% de la variabilidad
+
+## Modelo de regresión con SVM
+
+```{r regresion_svm}
+trainNum <- train[, c('MasVnrArea', 'LotFrontage', 'LotArea', 'OverallQual', 'OverallCond', 'BsmtFinSF1', 'TotalBsmtSF', 'X1stFlrSF', 'X2ndFlrSF', 'LowQualFinSF', 'GrLivArea', 'FullBath', 'HalfBath', 'BedroomAbvGr', 'KitchenAbvGr', 'TotRmsAbvGrd', 'Fireplaces', 'GarageCars', 'GarageArea', 'WoodDeckSF', 'OpenPorchSF', 'EnclosedPorch', 'ScreenPorch', 'PoolArea', 'MiscVal', 'SalePrice')]
+testNum <- test[, c('MasVnrArea', 'LotFrontage', 'LotArea', 'OverallQual', 'OverallCond', 'BsmtFinSF1', 'TotalBsmtSF', 'X1stFlrSF', 'X2ndFlrSF', 'LowQualFinSF', 'GrLivArea', 'FullBath', 'HalfBath', 'BedroomAbvGr', 'KitchenAbvGr', 'TotRmsAbvGrd', 'Fireplaces', 'GarageCars', 'GarageArea', 'WoodDeckSF', 'OpenPorchSF', 'EnclosedPorch', 'ScreenPorch', 'PoolArea', 'MiscVal', 'SalePrice')]
+
+msvmrt <- tune.svm(SalePrice~., data = trainNum, cost=c(0.01,0.1,0.5,1,5,10,16,20,32), kernel="linear")
+summary(msvmrt$best.model)
+prediccionR <- predict(msvmrt$best.model, newdata = testNum[, -26])
 ```
