@@ -102,9 +102,43 @@ confusionMatrix(test[complete.cases(test), 58], prediccion1)
 confusionMatrix(test[complete.cases(test), 58], prediccion2)
 confusionMatrix(test[complete.cases(test), 58], prediccion3)
 confusionMatrix(test[complete.cases(test), 58], prediccion4)
+
+#Gr[afica predicción 1
+ytest <- test[complete.cases(test), 58]
+plot(prediccion1 , col="green",density=20,angle=135)
+plot(ytest, col="blue",density=20,angle=45,add=TRUE, beside = TRUE)
+legend("bottom",
+c("Predicción del modelo","Datos reales"),
+fill=c("green","blue"))
+
+#Gráfica predicción 2
+plot(prediccion2 , col="green",density=20,angle=135)
+plot(ytest, col="blue",density=20,angle=45,add=TRUE, beside = TRUE)
+legend("bottom",
+c("Predicción del modelo","Datos reales"),
+fill=c("green","blue"))
+
+#Gráfica predicción 3
+plot(prediccion3 , col="green",density=20,angle=135)
+plot(ytest, col="blue",density=20,angle=45,add=TRUE, beside = TRUE)
+legend("bottom",
+c("Predicción del modelo","Datos reales"),
+fill=c("green","blue"))
+
+#Gráfica predicción 4
+plot(prediccion4 , col="green",density=20,angle=135)
+plot(ytest, col="blue",density=20,angle=45,add=TRUE, beside = TRUE)
+legend("bottom",
+c("Predicción del modelo","Datos reales"),
+fill=c("green","blue"))
+
 ```
 
-Tomando en cuenta la exactitud de cada uno de los modelos anteriores, podemos concluir que los mejores fueron el modelo lineal y el polinomial, pues cada uno logró explicar más del 80% de la variabilidad
+Tomando en cuenta la exactitud de cada uno de los modelos anteriores, podemos concluir que los mejores fueron el modelo lineal y el polinomial, pues cada uno logró explicar más del 80% de la variabilidad. Sin embargo, como podemos apreciar en los resultados de las matrices, todos los modelos cuentan con algo de underfitting, con excepción del modelo 4, clasificando varias casas de las caras o económicas como intermedias. Consideramos que eso es lógico, ya que es el valor de en medio y el que más puede tener factores en común con los otros dos. Veamos en cambio como el modelo 4 tiene problemas de overfitting, como era de esperarse al colocar un c bastante elevado. Vemos entonces cómo clasificó a todas las casas como Caras, de modo que solo se ajusta al conjunto de entrenamiento. En este caso, en los primeros modelos se debría subir un poco el costo, sin embargo,m por el tipo de modelo, esto ayudaría más que todo en el modelo 3. En el caso del modelo 4 se debe realizar lo contrario
+
+## Comparación con modelos anteriores
+
+Veamos que, a diferencia del modelo 4, el cual es el peor generado hasta la fecha, estos modelos son los que mejor porcentaje han tenido, y comparativamente se han equivocado en menos casas. En mejor modelo que teníamos anteriormente era uno realizado con RandomForest, el cual tenía un accuracy del 82.04%. Veamos que todos los modelos del 1-3 presentan un accuracy del 84% o superior, y vemos también en las matrices y gráficas que no se equivocaron mucho en la predicción de las casas
 
 ## Modelo de regresión con SVM
 
@@ -115,4 +149,9 @@ testNum <- test[, c('MasVnrArea', 'LotFrontage', 'LotArea', 'OverallQual', 'Over
 msvmrt <- tune.svm(SalePrice~., data = trainNum, cost=c(0.01,0.1,0.5,1,5,10,16,20,32), kernel="linear")
 summary(msvmrt$best.model)
 prediccionR <- predict(msvmrt$best.model, newdata = testNum[, -26])
+
 ```
+
+### Comparación con otros modelos
+
+En cuestión de tiempo, este fue el que tardó más tiempo en encontrar el mejor modelo, sin embargo, para predecir, este logró tener un porcentaje de predicción más elevado que los otros, sin embargo, debemos considerar las variable sutilizadas en cada modelo.
